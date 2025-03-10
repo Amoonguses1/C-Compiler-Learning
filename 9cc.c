@@ -36,6 +36,23 @@ void error(char *fmt, ...)
     exit(1);
 }
 
+// input program
+char *user_input;
+
+// report where error occuers
+void error_at(char *loc, char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+
+    int pos = loc - user_input;
+    fprintf(stderr, "%s\n", user_input);
+    fprintf(stderr, "%*s", pos, " ");
+    fprintf(stderr, "^ ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    exit(1);
+}
 // if the next token is the specified symbol,
 // step forward and return true
 bool consume(char op)
@@ -56,7 +73,7 @@ void expect(char op)
 {
     if (token->kind != TK_RESERVED || token->str[0] != op)
     {
-        error("expected %c, but got: ", op, token->str[0]);
+        error_at(token->str, "expected '%c'", op);
     }
     token = token->next;
 }
@@ -67,7 +84,7 @@ int expect_number()
 {
     if (token->kind != TK_NUM)
     {
-        error("the current token is not a number");
+        error_at(token->str, "expected a number");
     }
 
     int val = token->val;
@@ -90,12 +107,13 @@ Token *new_token(TokenKind kind, Token *cur, char *str)
     return tok;
 }
 
-// tokenize the input string 'p' and return the start token
-Token *tokenize(char *p)
+// tokenize the input string 'input char' and return the start token
+Token *tokenize()
 {
     Token head;
     head.next = NULL;
     Token *cur = &head;
+    char *p = user_input;
     while (*p)
     {
         // skip the space character
@@ -133,7 +151,8 @@ int main(int argc, char **argv)
     }
 
     // tokenize
-    token = tokenize(argv[1]);
+    user_input = argv[1];
+    token = tokenize();
 
     // assembler start
     printf(".globl main\n");
