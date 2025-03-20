@@ -224,7 +224,13 @@ Token *tokenize()
             continue;
         }
 
-        if (*p == '+' || *p == '-')
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/')
+        {
+            cur = new_token(TK_RESERVED, cur, p++);
+            continue;
+        }
+
+        if (*p == '(' || *p == ')')
         {
             cur = new_token(TK_RESERVED, cur, p++);
             continue;
@@ -277,7 +283,7 @@ void gen(Node *node)
         printf("    mul x0, x0, x1\n");
         break;
     case ND_DIV:
-        printf("    div x0, x0, x1\n");
+        printf("    sdiv x0, x0, x1\n");
         break;
     }
 
@@ -292,32 +298,21 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // tokenize
+    // tokenize and parse.
     user_input = argv[1];
     token = tokenize();
+    Node *node = expr();
 
     // assembler start
     printf(".globl main\n");
     printf("main:\n");
 
-    // the start of the expression must be a number,
-    // check the top token and output mov instruction.
-    printf("    mov x0, %d\n", expect_number());
+    // code generation walking the AST.
+    gen(node);
 
-    // consume the consecutive tokens such as `+ <number>` or `- <number>`
-    // and output the assembler
-    while (!at_eof())
-    {
-        if (consume('+'))
-        {
-            printf("    add x0, x0, %d\n", expect_number());
-            continue;
-        }
-
-        expect('-');
-        printf("    sub x0, x0, %d\n", expect_number());
-    }
-
-    printf("    ret \n");
+    // pop the stack top and treat as return value
+    printf("    sub sp, sp, 16\n");
+    printf("    ldr x0, [sp, 0]\n");
+    printf("    ret\n");
     return 0;
 }
