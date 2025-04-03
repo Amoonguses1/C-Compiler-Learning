@@ -13,6 +13,7 @@
 typedef enum
 {
     TK_RESERVED, // symbols
+    TK_IDENT,    // identifier
     TK_NUM,      // integer token
     TK_EOF,      // end of input
 } TokenKind;
@@ -31,6 +32,7 @@ struct Token
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 bool consume(char *op);
+Token *consume_ident();
 void expect(char *op);
 int expect_number();
 bool at_eof();
@@ -47,15 +49,19 @@ extern Token *token;
 // the types of abstruct syntax tree
 typedef enum
 {
-    ND_ADD, // "+"
-    ND_SUB, // "-"
-    ND_MUL, // "*"
-    ND_DIV, // "/"
-    ND_NUM, // integer
-    ND_EQ,  // "=="
-    ND_NE,  // "!="
-    ND_LT,  // "<"
-    ND_LE,  // "<="
+    ND_ADD,       // "+"
+    ND_SUB,       // "-"
+    ND_MUL,       // "*"
+    ND_DIV,       // "/"
+    ND_ASSIGN,    // =
+    ND_NUM,       // integer
+    ND_RETURN,    // "return"
+    ND_EXPR_STMT, // Expression statement
+    ND_LVAR,      // local variable
+    ND_EQ,        // "=="
+    ND_NE,        // "!="
+    ND_LT,        // "<"
+    ND_LE,        // "<="
 } NodeKind;
 
 typedef struct Node Node;
@@ -64,12 +70,14 @@ typedef struct Node Node;
 struct Node
 {
     NodeKind kind; // the types of nodes
+    Node *next;    // next node
     Node *lhs;     // left-hand side
     Node *rhs;     // right-hand side
     int val;       // use this components if kind == ND_NUM
+    char name;     // use this components if kind == ND_LVAr
 };
 
-Node *expr();
+Node *program();
 
 //
 // codegen.c

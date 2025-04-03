@@ -1,12 +1,58 @@
 #include "9cc.h"
 
+void gen_addr(Node *node)
+{
+    if (node->kind != ND_LVAR)
+    {
+        error("the left value of assignement expression is not a vairble");
+    }
+
+    int offset = (node->name - 'a' + 1) * 8;
+    printf("    sub x0, x29, %d\n", offset);
+    printf("    str x0, [sp, -16]!\n");
+}
+
+void load()
+{
+    printf("    ldr x0, [sp], 16\n");
+    printf("    ldr x0, [x0]\n");
+    printf("    str x0, [sp, -16]!\n");
+}
+
+void store()
+{
+    printf("    ldr x1, [sp], 16\n");
+    printf("    ldr x0, [sp], 16\n");
+    printf("    str x1, [x0]\n");
+    printf("    str x1, [sp, -16]\n");
+}
+
 void gen(Node *node)
 {
-    if (node->kind == ND_NUM)
+    switch (node->kind)
     {
+    case ND_NUM:
         printf("    mov x0, %d\n", node->val);
+        printf("    sub sp, sp, 16\n");
         printf("    str x0, [sp, 0]\n");
+        return;
+    case ND_EXPR_STMT:
+        gen(node->lhs);
         printf("    add sp, sp, 16\n");
+        return;
+    case ND_RETURN:
+        gen(node->lhs);
+        printf("    ldr x0, [sp], 16\n");
+        printf("    b .Lreturn\n");
+        return;
+    case ND_LVAR:
+        gen_addr(node);
+        load();
+        return;
+    case ND_ASSIGN:
+        gen_addr(node->lhs);
+        gen(node->rhs);
+        store();
         return;
     }
 
@@ -14,12 +60,12 @@ void gen(Node *node)
     gen(node->rhs);
 
     // load rhs value
-    printf("    sub sp, sp, 16\n");
     printf("    ldr x1, [sp, 0]\n");
+    printf("    add sp, sp, 16\n");
 
     // load lhs value
-    printf("    sub sp, sp, 16\n");
     printf("    ldr x0, [sp, 0]\n");
+    printf("    add sp, sp, 16\n");
 
     switch (node->kind)
     {
@@ -52,8 +98,8 @@ void gen(Node *node)
         printf("    cset x0, lt\n");
     }
 
+    printf("    sub sp, sp, 16\n");
     printf("    str x0, [sp, 0]\n");
-    printf("    add sp, sp, 16\n");
 }
 
 void codegen(Node *node)
@@ -62,14 +108,21 @@ void codegen(Node *node)
     printf(".globl main\n");
     printf("main:\n");
 
-    gen(node);
+    // Prologue
+    printf("    str x29, [sp, -16]!\n");
+    printf("    mov x29, sp\n");
+    printf("    sub sp, sp, 208\n");
 
     // code generation walking the AST.
-    gen(node);
+    for (Node *n = node; n; n = n->next)
+    {
+        gen(n);
+        printf("    ldr x0, [sp, 0]\n");
+        printf("    add sp, sp, 16\n");
+    }
 
-    // pop the stack top and treat as return value
-    printf("    sub sp, sp, 16\n");
-    printf("    ldr x0, [sp, 0]\n");
+    printf(".Lreturn:\n");
+    printf("    mov sp, x29\n");
+    printf("    ldr x29, [sp], 16\n");
     printf("    ret\n");
-    return 0;
 }

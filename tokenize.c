@@ -43,14 +43,28 @@ bool consume(char *op)
     return true;
 }
 
+// if the next token is a local variable,
+// step forward and return the token
+Token *consume_ident()
+{
+    if (token->kind != TK_IDENT)
+    {
+        return NULL;
+    }
+
+    Token *t = token;
+    token = token->next;
+    return t;
+}
+
 // if the next token is the expected symbol,
 // step forward.
 // if not, report error
 void expect(char *op)
 {
-    if (token->kind != TK_RESERVED || strncmp(token->str, op, strlen(op)))
+    if (token->kind != TK_RESERVED || strlen(op) != token->len || strncmp(token->str, op, strlen(op)))
     {
-        error_at(token->str, "expected '%c'", op);
+        error_at(token->str, "expected '%s'", op);
     }
     token = token->next;
 }
@@ -90,6 +104,16 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len)
     return tok;
 }
 
+bool is_alpha(char c)
+{
+    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
+}
+
+bool is_alnum(char c)
+{
+    return is_alpha(c) || ('0' <= c && c <= '9');
+}
+
 // tokenize the input string 'input char' and return the start token
 Token *tokenize()
 {
@@ -105,6 +129,14 @@ Token *tokenize()
             p++;
             continue;
         }
+
+        if (starts_with(p, "return") && !is_alnum(p[6]))
+        {
+            cur = new_token(TK_RESERVED, cur, p, 6);
+            p += 6;
+            continue;
+        }
+
         if (starts_with(p, "<=") || starts_with(p, ">=") ||
             starts_with(p, "==") || starts_with(p, "!="))
         {
@@ -113,9 +145,16 @@ Token *tokenize()
             continue;
         }
 
-        if (strchr("+-*/()<>", *p))
+        if (strchr("+-*/()<>;=", *p))
         {
             cur = new_token(TK_RESERVED, cur, p++, 1);
+            continue;
+        }
+
+        // Identifier
+        if ('a' <= *p && *p <= 'z')
+        {
+            cur = new_token(TK_IDENT, cur, p++, 1);
             continue;
         }
 
