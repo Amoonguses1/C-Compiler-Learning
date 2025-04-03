@@ -2,13 +2,12 @@
 
 void gen_addr(Node *node)
 {
-    if (node->kind != ND_LVAR)
+    if (node->kind != ND_VAR)
     {
         error("the left value of assignement expression is not a vairble");
     }
 
-    int offset = (node->name - 'a' + 1) * 8;
-    printf("    sub x0, x29, %d\n", offset);
+    printf("    sub x0, x29, %d\n", node->var->offset);
     printf("    str x0, [sp, -16]!\n");
 }
 
@@ -45,7 +44,7 @@ void gen(Node *node)
         printf("    ldr x0, [sp], 16\n");
         printf("    b .Lreturn\n");
         return;
-    case ND_LVAR:
+    case ND_VAR:
         gen_addr(node);
         load();
         return;
@@ -102,7 +101,7 @@ void gen(Node *node)
     printf("    str x0, [sp, 0]\n");
 }
 
-void codegen(Node *node)
+void codegen(Program *prog)
 {
     // assembler start
     printf(".globl main\n");
@@ -111,10 +110,10 @@ void codegen(Node *node)
     // Prologue
     printf("    str x29, [sp, -16]!\n");
     printf("    mov x29, sp\n");
-    printf("    sub sp, sp, 208\n");
+    printf("    sub sp, sp, %d\n", prog->stack_size);
 
     // code generation walking the AST.
-    for (Node *n = node; n; n = n->next)
+    for (Node *n = prog->node; n; n = n->next)
     {
         gen(n);
         printf("    ldr x0, [sp, 0]\n");

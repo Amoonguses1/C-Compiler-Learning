@@ -11,7 +11,24 @@ int main(int argc, char **argv)
     // tokenize and parse.
     user_input = argv[1];
     token = tokenize();
-    Node *node = program();
+    Program *prog = program();
 
-    codegen(node);
+    int offset = 0;
+    for (Var *var = prog->locals; var; var = var->next)
+    {
+        offset += 8;
+    }
+    int i = 0;
+    for (Var *var = prog->locals; var; var = var->next)
+    {
+        var->offset = offset - 8 * i;
+        i++;
+    }
+    if (offset % 16)
+    {
+        offset += 8;
+    }
+    prog->stack_size = offset;
+
+    codegen(prog);
 }

@@ -31,6 +31,7 @@ struct Token
 
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
+char *strndup(char *p, int len);
 bool consume(char *op);
 Token *consume_ident();
 void expect(char *op);
@@ -46,6 +47,14 @@ extern Token *token;
 // parse.c
 //
 
+typedef struct Var Var;
+struct Var
+{
+    Var *next;
+    char *name; // Variable name
+    int offset; // Offset from RBP
+};
+
 // the types of abstruct syntax tree
 typedef enum
 {
@@ -57,7 +66,7 @@ typedef enum
     ND_NUM,       // integer
     ND_RETURN,    // "return"
     ND_EXPR_STMT, // Expression statement
-    ND_LVAR,      // local variable
+    ND_VAR,       // variable
     ND_EQ,        // "=="
     ND_NE,        // "!="
     ND_LT,        // "<"
@@ -74,13 +83,20 @@ struct Node
     Node *lhs;     // left-hand side
     Node *rhs;     // right-hand side
     int val;       // use this components if kind == ND_NUM
-    char name;     // use this components if kind == ND_LVAr
+    Var *var;      // use this components if kind == ND_VAR
 };
 
-Node *program();
+typedef struct
+{
+    Node *node;
+    Var *locals;
+    int stack_size;
+} Program;
+
+Program *program();
 
 //
 // codegen.c
 //
 
-void codegen(Node *node);
+void codegen(Program *prog);
