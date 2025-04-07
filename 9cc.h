@@ -68,6 +68,7 @@ typedef enum
     ND_IF,        // "if"
     ND_WHILE,     // "while"
     ND_FOR,       // "for"
+    ND_BLOCK,     // { ... } compound statement
     ND_EXPR_STMT, // Expression statement
     ND_VAR,       // variable
     ND_EQ,        // "=="
@@ -93,6 +94,9 @@ struct Node
     Node *els;
     Node *init;
     Node *inc;
+
+    // compound statement
+    Node *body;
 
     int val;  // use this components if kind == ND_NUM
     Var *var; // use this components if kind == ND_VAR
