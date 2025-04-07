@@ -122,6 +122,32 @@ bool is_alnum(char c)
     return is_alpha(c) || ('0' <= c && c <= '9');
 }
 
+char *starts_withreserved(char *p)
+{
+    // Keywords
+    static char *kw[] = {"return", "if", "else", "while", "for"};
+    for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
+    {
+        int len = strlen(kw[i]);
+        if (starts_with(p, kw[i]) && !is_alnum(p[len]))
+        {
+            return kw[i];
+        }
+    }
+
+    // multi-letter
+    static char *ops[] = {"==", "!=", "<=", ">="};
+    for (int i = 0; i < sizeof(ops) / sizeof(*ops); i++)
+    {
+        if (starts_with(p, ops[i]))
+        {
+            return ops[i];
+        }
+    }
+
+    return NULL;
+}
+
 // tokenize the input string 'input char' and return the start token
 Token *tokenize()
 {
@@ -138,18 +164,13 @@ Token *tokenize()
             continue;
         }
 
-        if (starts_with(p, "return") && !is_alnum(p[6]))
+        // Keyword or multi-letter punctuator
+        char *kw = starts_withreserved(p);
+        if (kw)
         {
-            cur = new_token(TK_RESERVED, cur, p, 6);
-            p += 6;
-            continue;
-        }
-
-        if (starts_with(p, "<=") || starts_with(p, ">=") ||
-            starts_with(p, "==") || starts_with(p, "!="))
-        {
-            cur = new_token(TK_RESERVED, cur, p, 2);
-            p += 2;
+            int len = strlen(kw);
+            cur = new_token(TK_RESERVED, cur, p, len);
+            p += len;
             continue;
         }
 

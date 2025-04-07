@@ -1,5 +1,7 @@
 #include "9cc.h"
 
+int labelseq = 0;
+
 void gen_addr(Node *node)
 {
     if (node->kind != ND_VAR)
@@ -43,6 +45,64 @@ void gen(Node *node)
         gen(node->lhs);
         printf("    ldr x0, [sp], 16\n");
         printf("    b .Lreturn\n");
+        return;
+
+    case ND_IF:
+        int seq = labelseq++;
+        if (node->els)
+        {
+            gen(node->cond);
+            printf("    ldr x0, [sp, 0]\n");
+            printf("    add sp, sp, 16\n");
+            printf("    cbz x0, .Lelse%d\n", seq);
+            gen(node->then);
+            printf("    b .Lend%d\n", seq);
+            printf(".Lelse%d:\n", seq);
+            gen(node->els);
+            printf(".Lend%d:\n", seq);
+        }
+        else
+        {
+            gen(node->cond);
+            printf("    ldr x0, [sp, 0]\n");
+            printf("    add sp, sp, 16\n");
+            printf("    cbz x0, .Lend%d\n", seq);
+            gen(node->then);
+            printf(".Lend%d:\n", seq);
+        }
+        return;
+    case ND_WHILE:
+        seq = labelseq++;
+        printf(".Lbegin%d:\n", seq);
+        gen(node->cond);
+        printf("    ldr x0, [sp, 0]\n");
+        printf("    add sp, sp, 16\n");
+        printf("    cbz x0, .Lend%d\n", seq);
+        gen(node->then);
+        printf("    b .Lbegin%d\n", seq);
+        printf(".Lend%d:\n", seq);
+        return;
+    case ND_FOR:
+        seq = labelseq++;
+        if (node->init)
+        {
+            gen(node->init);
+        }
+        printf(".Lbegin%d:\n", seq);
+        if (node->cond)
+        {
+            gen(node->cond);
+            printf("    ldr x0, [sp, 0]\n");
+            printf("    add sp, sp, 16\n");
+            printf("    cbz x0, .Lend%d\n", seq);
+        }
+        gen(node->then);
+        if (node->inc)
+        {
+            gen(node->inc);
+        }
+        printf("    b .Lbegin%d\n", seq);
+        printf(".Lend%d:\n", seq);
         return;
     case ND_VAR:
         gen_addr(node);

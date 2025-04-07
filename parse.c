@@ -69,6 +69,11 @@ Var *push_var(char *name)
     return var;
 }
 
+Node *read_expr_stmt()
+{
+    return new_node_unary(ND_EXPR_STMT, expr());
+}
+
 // processes the following matching generation rule.
 //
 // program = stmt*
@@ -94,7 +99,12 @@ Program *program()
 
 // processes the following matching generation rule.
 //
-// stmt = "return" expr ";" | expr ";"
+// stmt =
+//      "return" expr ";"
+//      | expr ";"
+//      | "if" "(" expr ")" stmt ("else" stmt)?
+//      | "while" "(" expr ")" stmt
+//      | "for" "(" expr? "; expr? ";" expr? ")" stmt
 Node *stmt()
 {
     if (consume("return"))
@@ -104,7 +114,54 @@ Node *stmt()
         return node;
     }
 
-    Node *node = new_node_unary(ND_EXPR_STMT, expr());
+    if (consume("if"))
+    {
+        Node *node = new_node(ND_IF);
+        expect("(");
+        node->cond = expr();
+        expect(")");
+        node->then = stmt();
+        if (consume("else"))
+        {
+            node->els = stmt();
+        }
+        return node;
+    }
+
+    if (consume("while"))
+    {
+        Node *node = new_node(ND_WHILE);
+        expect("(");
+        node->cond = expr();
+        expect(")");
+        node->then = stmt();
+        return node;
+    }
+
+    if (consume("for"))
+    {
+        Node *node = new_node(ND_FOR);
+        expect("(");
+        if (!consume(";"))
+        {
+            node->init = read_expr_stmt();
+            expect(";");
+        }
+        if (!consume(";"))
+        {
+            node->cond = expr();
+            expect(";");
+        }
+        if (!consume(")"))
+        {
+            node->inc = read_expr_stmt();
+            expect(")");
+        }
+        node->then = stmt();
+        return node;
+    }
+
+    Node *node = read_expr_stmt();
     expect(";");
     return node;
 }

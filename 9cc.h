@@ -65,6 +65,9 @@ typedef enum
     ND_ASSIGN,    // =
     ND_NUM,       // integer
     ND_RETURN,    // "return"
+    ND_IF,        // "if"
+    ND_WHILE,     // "while"
+    ND_FOR,       // "for"
     ND_EXPR_STMT, // Expression statement
     ND_VAR,       // variable
     ND_EQ,        // "=="
@@ -80,10 +83,19 @@ struct Node
 {
     NodeKind kind; // the types of nodes
     Node *next;    // next node
-    Node *lhs;     // left-hand side
-    Node *rhs;     // right-hand side
-    int val;       // use this components if kind == ND_NUM
-    Var *var;      // use this components if kind == ND_VAR
+
+    Node *lhs; // left-hand side
+    Node *rhs; // right-hand side
+
+    // if, while, or for statement
+    Node *cond;
+    Node *then;
+    Node *els;
+    Node *init;
+    Node *inc;
+
+    int val;  // use this components if kind == ND_NUM
+    Var *var; // use this components if kind == ND_VAR
 };
 
 typedef struct
