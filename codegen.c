@@ -110,6 +110,14 @@ void gen(Node *node)
             gen(n);
         }
         return;
+    case ND_FUNCALL:
+        printf("    stp x29, x30, [sp, -16]!\n");
+        printf("    mov x29, sp\n");
+        printf("    bl %s\n", node->funcname);
+        printf("    ldp x29, x30, [sp], 16\n");
+        printf("    sub sp, sp, #16\n");
+        printf("    str x0, [sp]\n");
+        return;
     case ND_VAR:
         gen_addr(node);
         load();
