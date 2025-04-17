@@ -1,6 +1,7 @@
 #include "9cc.h"
 
-Program *program();
+Function *program();
+Function *function();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -76,25 +77,48 @@ Node *read_expr_stmt()
 
 // processes the following matching generation rule.
 //
-// program = stmt*
-Program *program()
+// program = function*
+Function *program()
+{
+    Function head;
+    head.next = NULL;
+    Function *cur = &head;
+
+    while (!at_eof())
+    {
+        cur->next = function();
+        cur = cur->next;
+    }
+    return head.next;
+}
+
+// processes the following matching generation rule.
+//
+// function = ident "(" ")" "{" stmt* "}"
+Function *function()
 {
     locals = NULL;
+
+    char *name = expect_ident();
+    expect("(");
+    expect(")");
+    expect("{");
 
     Node head;
     head.next = NULL;
     Node *cur = &head;
 
-    while (!at_eof())
+    while (!consume("}"))
     {
         cur->next = stmt();
         cur = cur->next;
     }
 
-    Program *prog = calloc(1, sizeof(Program));
-    prog->node = head.next;
-    prog->locals = locals;
-    return prog;
+    Function *fn = calloc(1, sizeof(Function));
+    fn->name = name;
+    fn->node = head.next;
+    fn->locals = locals;
+    return fn;
 }
 
 // processes the following matching generation rule.

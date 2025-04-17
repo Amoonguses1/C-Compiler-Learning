@@ -1,6 +1,7 @@
 #include "9cc.h"
 
 int labelseq = 0;
+char *funcname;
 char *argreg[] = {"x0", "x1", "x2", "x3", "x4", "x5"};
 
 void gen_addr(Node *node)
@@ -45,7 +46,7 @@ void gen(Node *node)
     case ND_RETURN:
         gen(node->lhs);
         printf("    ldr x0, [sp], 16\n");
-        printf("    b .Lreturn\n");
+        printf("    b .Lreturn.%s\n", funcname);
         return;
 
     case ND_IF:
@@ -187,27 +188,30 @@ void gen(Node *node)
     printf("    str x0, [sp, 0]\n");
 }
 
-void codegen(Program *prog)
+void codegen(Function *prog)
 {
-    // assembler start
-    printf(".globl main\n");
-    printf("main:\n");
-
-    // Prologue
-    printf("    str x29, [sp, -16]!\n");
-    printf("    mov x29, sp\n");
-    printf("    sub sp, sp, %d\n", prog->stack_size);
-
-    // code generation walking the AST.
-    for (Node *n = prog->node; n; n = n->next)
+    for (Function *fn = prog; fn; fn = fn->next)
     {
-        gen(n);
-        printf("    ldr x0, [sp, 0]\n");
-        printf("    add sp, sp, 16\n");
-    }
+        printf(".globl %s\n", fn->name);
+        printf("%s:\n", fn->name);
+        funcname = fn->name;
 
-    printf(".Lreturn:\n");
-    printf("    mov sp, x29\n");
-    printf("    ldr x29, [sp], 16\n");
-    printf("    ret\n");
+        // Prologue
+        printf("    str x29, [sp, -16]!\n");
+        printf("    mov x29, sp\n");
+        printf("    sub sp, sp, %d\n", fn->stack_size);
+
+        // code generation walking the AST.
+        for (Node *n = fn->node; n; n = n->next)
+        {
+            gen(n);
+            printf("    ldr x0, [sp, 0]\n");
+            printf("    add sp, sp, 16\n");
+        }
+
+        printf(".Lreturn.%s:\n", funcname);
+        printf("    mov sp, x29\n");
+        printf("    ldr x29, [sp], 16\n");
+        printf("    ret\n");
+    }
 }
