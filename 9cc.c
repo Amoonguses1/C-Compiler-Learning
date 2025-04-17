@@ -16,14 +16,14 @@ int main(int argc, char **argv)
     for (Function *fn = prog; fn; fn = fn->next)
     {
         int offset = 0;
-        for (Var *var = prog->locals; var; var = var->next)
+        for (VarList *vl = fn->locals; vl; vl = vl->next)
         {
             offset += 8;
         }
         int i = 0;
-        for (Var *var = prog->locals; var; var = var->next)
+        for (VarList *vl = fn->locals; vl; vl = vl->next)
         {
-            var->offset = offset - 8 * i;
+            vl->var->offset = offset - 8 * i;
             i++;
         }
         if (offset % 16)

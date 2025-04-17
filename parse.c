@@ -12,14 +12,19 @@ Node *mul();
 Node *unary();
 Node *primary();
 
-Var *locals;
+VarList *locals;
 
 // Find a local variable by name.
 Var *find_var(Token *tok)
 {
-    for (Var *var = locals; var; var = var->next)
+    for (VarList *vl = locals; vl; vl = vl->next)
+    {
+        Var *var = vl->var;
         if (strlen(var->name) == tok->len && !memcmp(tok->str, var->name, tok->len))
+        {
             return var;
+        }
+    }
     return NULL;
 }
 
@@ -64,9 +69,12 @@ Node *new_var(Var *var)
 Var *push_var(char *name)
 {
     Var *var = calloc(1, sizeof(Var));
-    var->next = locals;
     var->name = name;
-    locals = var;
+
+    VarList *vl = calloc(1, sizeof(VarList));
+    vl->var = var;
+    vl->next = locals;
+    locals = vl;
     return var;
 }
 
@@ -92,16 +100,40 @@ Function *program()
     return head.next;
 }
 
+VarList *read_func_params()
+{
+    if (consume(")"))
+    {
+        return NULL;
+    }
+
+    VarList *head = calloc(1, sizeof(VarList));
+    head->var = push_var(expect_ident());
+    VarList *cur = head;
+
+    while (!consume(")"))
+    {
+        expect(",");
+        cur->next = calloc(1, sizeof(VarList));
+        cur->next->var = push_var(expect_ident());
+        cur = cur->next;
+    }
+
+    return head;
+}
+
 // processes the following matching generation rule.
 //
-// function = ident "(" ")" "{" stmt* "}"
+// function = ident "(" params? ")" "{" stmt* "}"
+// params = idenx ( "," ident)*
 Function *function()
 {
     locals = NULL;
 
-    char *name = expect_ident();
+    Function *fn = calloc(1, sizeof(Function));
+    fn->name = expect_ident();
     expect("(");
-    expect(")");
+    fn->params = read_func_params();
     expect("{");
 
     Node head;
@@ -114,8 +146,6 @@ Function *function()
         cur = cur->next;
     }
 
-    Function *fn = calloc(1, sizeof(Function));
-    fn->name = name;
     fn->node = head.next;
     fn->locals = locals;
     return fn;

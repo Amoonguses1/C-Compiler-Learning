@@ -201,6 +201,14 @@ void codegen(Function *prog)
         printf("    mov x29, sp\n");
         printf("    sub sp, sp, %d\n", fn->stack_size);
 
+        // Push arguments to the stack
+        int i = 0;
+        for (VarList *vl = fn->params; vl; vl = vl->next)
+        {
+            Var *var = vl->var;
+            printf("    str %s, [x29, -%d]\n", argreg[i++], var->offset);
+        }
+
         // code generation walking the AST.
         for (Node *n = fn->node; n; n = n->next)
         {
