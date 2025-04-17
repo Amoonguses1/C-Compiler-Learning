@@ -101,6 +101,7 @@ struct Node
 
     // Function call
     char *funcname;
+    Node *args;
 
     int val;  // use this components if kind == ND_NUM
     Var *var; // use this components if kind == ND_VAR

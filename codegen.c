@@ -1,6 +1,7 @@
 #include "9cc.h"
 
 int labelseq = 0;
+char *argreg[] = {"x0", "x1", "x2", "x3", "x4", "x5"};
 
 void gen_addr(Node *node)
 {
@@ -111,6 +112,17 @@ void gen(Node *node)
         }
         return;
     case ND_FUNCALL:
+        int nargs = 0;
+        for (Node *arg = node->args; arg; arg = arg->next)
+        {
+            gen(arg);
+            nargs++;
+        }
+        for (int i = nargs - 1; i >= 0; i--)
+        {
+            printf("    ldr %s, [sp, 0]\n", argreg[i]);
+            printf("    add sp, sp, 16\n");
+        }
         printf("    stp x29, x30, [sp, -16]!\n");
         printf("    mov x29, sp\n");
         printf("    bl %s\n", node->funcname);
