@@ -32,7 +32,8 @@ struct Token
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
 char *strndup(char *p, int len);
-bool consume(char *op);
+void error_tok(Token *tok, char *fmt, ...);
+Token *consume(char *op);
 Token *consume_ident();
 void expect(char *op);
 int expect_number();
@@ -70,6 +71,8 @@ typedef enum
     ND_MUL,       // "*"
     ND_DIV,       // "/"
     ND_ASSIGN,    // =
+    ND_ADDR,      // unary &
+    ND_DEREF,     // unary *
     ND_NUM,       // integer
     ND_RETURN,    // "return"
     ND_IF,        // "if"
@@ -92,6 +95,7 @@ struct Node
 {
     NodeKind kind; // the types of nodes
     Node *next;    // next node
+    Token *tok;    // Representative token
 
     Node *lhs; // left-hand side
     Node *rhs; // right-hand side

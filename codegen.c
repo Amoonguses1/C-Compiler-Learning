@@ -4,15 +4,22 @@ int labelseq = 0;
 char *funcname;
 char *argreg[] = {"x0", "x1", "x2", "x3", "x4", "x5"};
 
+void gen(Node *node);
+
 void gen_addr(Node *node)
 {
-    if (node->kind != ND_VAR)
+    switch (node->kind)
     {
-        error("the left value of assignement expression is not a vairble");
+    case ND_VAR:
+        printf("    sub x0, x29, %d\n", node->var->offset);
+        printf("    str x0, [sp, -16]!\n");
+        return;
+    case ND_DEREF:
+        gen(node->lhs);
+        return;
     }
 
-    printf("    sub x0, x29, %d\n", node->var->offset);
-    printf("    str x0, [sp, -16]!\n");
+    error_tok(node->tok, "not an lvalue");
 }
 
 void load()
@@ -48,7 +55,13 @@ void gen(Node *node)
         printf("    ldr x0, [sp], 16\n");
         printf("    b .Lreturn.%s\n", funcname);
         return;
-
+    case ND_ADDR:
+        gen_addr(node->lhs);
+        return;
+    case ND_DEREF:
+        gen(node->lhs);
+        load();
+        return;
     case ND_IF:
         int seq = labelseq++;
         if (node->els)

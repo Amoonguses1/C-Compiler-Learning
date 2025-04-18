@@ -89,4 +89,14 @@ assert 21 'main() { return add6(1,2,3,4,5,6); }'
 assert 32 'main() { return ret32(); } ret32() { return 32; }'
 assert 7 'main() { return add2(3,4); } add2(x,y) { return x+y; }'
 assert 1 'main() { return sub2(4,3); } sub2(x,y) { return x-y; }'
+
+assert 3 'main() { x=3; return *&x; }'
+assert 3 'main() { x=3; y=&x; z=&y; return **z; }'
+assert 5 'main() { x=3; y=5; return *(&x+8); }'
+assert 3 'main() { x=3; y=5; return *(&y-16); }'
+# assert 5 'main() { x=3; y=&x; *y=5; return x; }'
+
+# assert 7 'main() { x=3; y=5; *(&x+8)=7; return y; }'
+assert 7 'main() { x=3; y=5; *(&y-16)=7; return x; }'
+
 echo OK

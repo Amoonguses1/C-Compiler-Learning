@@ -14,15 +14,34 @@ void error(char *fmt, ...)
 }
 
 // report where error occuers
-void error_at(char *loc, char *fmt, ...)
+void verror_at(char *loc, char *fmt, va_list ap)
 {
-    va_list ap;
-    va_start(ap, fmt);
 
     int pos = loc - user_input;
     fprintf(stderr, "%s\n", user_input);
     fprintf(stderr, "%*s", pos, " ");
     fprintf(stderr, "^ ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    exit(1);
+}
+
+// Reports an error location and exit.
+void error_at(char *loc, char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    verror_at(loc, fmt, ap);
+}
+
+// Reports an error location and exit.
+void error_tok(Token *tok, char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    if (tok)
+        verror_at(tok->str, fmt, ap);
+
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     exit(1);
@@ -38,17 +57,18 @@ char *strndup(char *p, int len)
 
 // if the next token is the specified symbol,
 // step forward and return true
-bool consume(char *op)
+Token *consume(char *op)
 {
     if (token->kind != TK_RESERVED ||
         strlen(op) != token->len ||
         strncmp(token->str, op, token->len))
     {
-        return false;
+        return NULL;
     }
 
+    Token *t = token;
     token = token->next;
-    return true;
+    return t;
 }
 
 // if the next token is a local variable,
@@ -72,7 +92,7 @@ void expect(char *op)
 {
     if (token->kind != TK_RESERVED || strlen(op) != token->len || strncmp(token->str, op, strlen(op)))
     {
-        error_at(token->str, "expected '%s'", op);
+        error_tok(token, "expected \"%s\"", op);
     }
     token = token->next;
 }
@@ -83,7 +103,7 @@ int expect_number()
 {
     if (token->kind != TK_NUM)
     {
-        error_at(token->str, "expected a number");
+        error_tok(token, "expected a number");
     }
 
     int val = token->val;
@@ -95,7 +115,7 @@ char *expect_ident()
 {
     if (token->kind != TK_IDENT)
     {
-        error_at(token->str, "expected an identifier");
+        error_tok(token, "expected an identifier");
     }
 
     char *s = strndup(token->str, token->len);
@@ -186,7 +206,7 @@ Token *tokenize()
             continue;
         }
 
-        if (strchr("+-*/()<>;={},", *p))
+        if (strchr("+-*/()<>;={},&", *p))
         {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
